@@ -3,53 +3,48 @@ import { useEffect, useRef } from "react";
 export default function CursorEffect() {
   const cursorRef = useRef<HTMLDivElement>(null);
   const trailRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number>(0);
   useEffect(() => {
-    const isMobile = window.innerWidth <= 768;
+    const isMobile = window.matchMedia("(max-width: 768px)").matches || "ontouchstart" in window;
     if (isMobile) return;
-    let mouseX = 0, mouseY = 0;
-    let trailX = 0, trailY = 0;
+    let mouseX = -100, mouseY = -100;
+    let trailX = -100, trailY = -100;
+    let isHovering = false;
     const handleMove = (e: MouseEvent) => {
       mouseX = e.clientX;
       mouseY = e.clientY;
       if (cursorRef.current) {
-        cursorRef.current.style.transform = `translate(${mouseX - 6}px, ${mouseY - 6}px)`;
+        cursorRef.current.style.transform = `translate3d(${mouseX - 5}px, ${mouseY - 5}px, 0)`;
       }
     };
     const animate = () => {
-      trailX += (mouseX - trailX) * 0.15;
-      trailY += (mouseY - trailY) * 0.15;
+      trailX += (mouseX - trailX) * 0.12;
+      trailY += (mouseY - trailY) * 0.12;
       if (trailRef.current) {
-        trailRef.current.style.transform = `translate(${trailX - 20}px, ${trailY - 20}px)`;
+        const size = isHovering ? 56 : 40;
+        const borderColor = isHovering ? "rgba(255,215,0,0.5)" : "rgba(255,215,0,0.2)";
+        trailRef.current.style.transform = `translate3d(${trailX - size / 2}px, ${trailY - size / 2}px, 0)`;
+        trailRef.current.style.width = `${size}px`;
+        trailRef.current.style.height = `${size}px`;
+        trailRef.current.style.borderColor = borderColor;
       }
-      requestAnimationFrame(animate);
+      rafRef.current = requestAnimationFrame(animate);
     };
-    const handleEnterInteractive = () => {
-      if (cursorRef.current) cursorRef.current.style.transform += " scale(0.5)";
-      if (trailRef.current) {
-        trailRef.current.style.width = "60px";
-        trailRef.current.style.height = "60px";
-        trailRef.current.style.borderColor = "rgba(255,215,0,0.6)";
-      }
-    };
-    const handleLeaveInteractive = () => {
-      if (trailRef.current) {
-        trailRef.current.style.width = "40px";
-        trailRef.current.style.height = "40px";
-        trailRef.current.style.borderColor = "rgba(255,215,0,0.3)";
-      }
-    };
-    document.addEventListener("mousemove", handleMove);
-    animate();
-    const interactives = document.querySelectorAll("a, button, [role='button']");
+    const onEnter = () => { isHovering = true; };
+    const onLeave = () => { isHovering = false; };
+    document.addEventListener("mousemove", handleMove, { passive: true });
+    rafRef.current = requestAnimationFrame(animate);
+    const interactives = document.querySelectorAll("a, button, [role='button'], input, select, textarea");
     interactives.forEach((el) => {
-      el.addEventListener("mouseenter", handleEnterInteractive);
-      el.addEventListener("mouseleave", handleLeaveInteractive);
+      el.addEventListener("mouseenter", onEnter);
+      el.addEventListener("mouseleave", onLeave);
     });
     return () => {
       document.removeEventListener("mousemove", handleMove);
+      cancelAnimationFrame(rafRef.current);
       interactives.forEach((el) => {
-        el.removeEventListener("mouseenter", handleEnterInteractive);
-        el.removeEventListener("mouseleave", handleLeaveInteractive);
+        el.removeEventListener("mouseenter", onEnter);
+        el.removeEventListener("mouseleave", onLeave);
       });
     };
   }, []);
@@ -57,13 +52,13 @@ export default function CursorEffect() {
     <>
       <div
         ref={cursorRef}
-        className="fixed top-0 left-0 w-3 h-3 rounded-full pointer-events-none z-[9998] hidden md:block"
-        style={{ background: "#FFD700", mixBlendMode: "difference" }}
+        className="fixed top-0 left-0 w-2.5 h-2.5 rounded-full pointer-events-none z-[9998] hidden md:block"
+        style={{ background: "var(--gold)", mixBlendMode: "difference", willChange: "transform" }}
       />
       <div
         ref={trailRef}
-        className="fixed top-0 left-0 w-10 h-10 rounded-full pointer-events-none z-[9997] hidden md:block transition-all duration-300"
-        style={{ border: "2px solid rgba(255,215,0,0.3)" }}
+        className="fixed top-0 left-0 w-10 h-10 rounded-full pointer-events-none z-[9997] hidden md:block"
+        style={{ border: "1.5px solid rgba(255,215,0,0.2)", transition: "width 0.3s, height 0.3s, border-color 0.3s", willChange: "transform" }}
       />
     </>
   );

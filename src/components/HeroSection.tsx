@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { Flame } from "lucide-react";
 import { XIcon, TelegramIcon, TikTokIcon } from "@/components/icons";
@@ -18,7 +18,8 @@ const floatingItems = [
 ];
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const gradientRef = useRef<HTMLDivElement>(null);
+  const imageRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll();
   const heroY = useTransform(scrollYProgress, [0, 0.3], [0, -100]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.3], [1, 0]);
@@ -26,9 +27,14 @@ export default function HeroSection() {
     const handleMouse = (e: MouseEvent) => {
       const x = (e.clientX / window.innerWidth - 0.5) * 2;
       const y = (e.clientY / window.innerHeight - 0.5) * 2;
-      setMousePos({ x, y });
+      if (gradientRef.current) {
+        gradientRef.current.style.background = `radial-gradient(circle at ${50 + x * 10}% ${50 + y * 10}%, rgba(255,215,0,0.1) 0%, transparent 50%)`;
+      }
+      if (imageRef.current) {
+        imageRef.current.style.transform = `translate3d(${x * -8}px, ${y * -8}px, 0)`;
+      }
     };
-    window.addEventListener("mousemove", handleMouse);
+    window.addEventListener("mousemove", handleMouse, { passive: true });
     return () => window.removeEventListener("mousemove", handleMouse);
   }, []);
   return (
@@ -39,20 +45,19 @@ export default function HeroSection() {
       className="relative min-h-screen flex items-center justify-center overflow-hidden px-4"
     >
       <div className="absolute inset-0">
-        <div
-          className="absolute inset-0 opacity-40"
-          style={{
-            background: `radial-gradient(circle at ${50 + mousePos.x * 10}% ${50 + mousePos.y * 10}%, rgba(255,215,0,0.12) 0%, transparent 50%)`,
-          }}
-        />
+        <div ref={gradientRef} className="absolute inset-0 opacity-40" />
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[1000px] rounded-full opacity-[0.03]"
           style={{ background: "radial-gradient(circle, #FFD700 0%, transparent 70%)" }}
         />
+        <div
+          className="absolute bottom-0 left-0 w-full h-[1px]"
+          style={{ background: "linear-gradient(90deg, transparent, rgba(255,215,0,0.15), transparent)" }}
+        />
         {floatingItems.map((item, i) => (
           <motion.div
             key={i}
-            className="particle opacity-20"
+            className="particle opacity-15"
             style={{ left: item.x, top: item.y }}
             animate={{
               y: [0, -25, 0, 25, 0],
@@ -84,9 +89,9 @@ export default function HeroSection() {
                 left: positions[i].x,
                 top: positions[i].y,
                 rotate: positions[i].r,
-                color: "rgba(255,215,0,0.06)",
+                color: "rgba(255,215,0,0.04)",
               }}
-              animate={{ opacity: [0.03, 0.08, 0.03] }}
+              animate={{ opacity: [0.02, 0.06, 0.02] }}
               transition={{ duration: 5, repeat: Infinity, delay: i * 0.4 }}
             >
               {text}
@@ -120,7 +125,7 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.6 }}
-            className="text-lg md:text-xl text-white/50 max-w-lg mx-auto lg:mx-0 mb-10"
+            className="text-lg md:text-xl text-white/40 max-w-lg mx-auto lg:mx-0 mb-10"
           >
             {siteConfig.tagline}
           </motion.p>
@@ -134,20 +139,18 @@ export default function HeroSection() {
               href={siteConfig.links.telegram}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative px-7 py-3.5 rounded-xl font-bold text-black transition-all duration-300 hover:scale-105 active:scale-95"
-              style={{ background: "linear-gradient(135deg, #FFE55C, #FFD700, #B8960F)" }}
+              className="group relative btn-gold px-7 py-3.5 rounded-xl"
             >
-              <span className="flex items-center gap-2">
+              <span className="relative z-10 flex items-center gap-2">
                 <Flame className="w-5 h-5" />
                 JOIN THE CULT
               </span>
-              <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300" style={{ boxShadow: "0 0 30px rgba(255,215,0,0.5)" }} />
             </a>
             <a
               href={siteConfig.links.telegram}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-5 py-3.5 rounded-xl font-semibold glass text-white hover:border-[var(--gold)] transition-all duration-300 hover:scale-105"
+              className="flex items-center gap-2 px-5 py-3.5 rounded-xl font-semibold glass text-white hover:border-[var(--gold)] transition-all duration-300 hover:scale-105 card-hover-glow"
             >
               <TelegramIcon className="w-5 h-5 text-[var(--gold)]" />
               TELEGRAM
@@ -156,7 +159,7 @@ export default function HeroSection() {
               href={siteConfig.links.tiktok}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-5 py-3.5 rounded-xl font-semibold glass text-white hover:border-[var(--gold)] transition-all duration-300 hover:scale-105"
+              className="flex items-center gap-2 px-5 py-3.5 rounded-xl font-semibold glass text-white hover:border-[var(--gold)] transition-all duration-300 hover:scale-105 card-hover-glow"
             >
               <TikTokIcon className="w-5 h-5 text-[var(--gold)]" />
               TIKTOK
@@ -165,7 +168,7 @@ export default function HeroSection() {
               href={siteConfig.links.twitter}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 px-5 py-3.5 rounded-xl font-semibold glass text-white hover:border-[var(--gold)] transition-all duration-300 hover:scale-105"
+              className="flex items-center gap-2 px-5 py-3.5 rounded-xl font-semibold glass text-white hover:border-[var(--gold)] transition-all duration-300 hover:scale-105 card-hover-glow"
             >
               <XIcon className="w-5 h-5 text-[var(--gold)]" />
               X / TWITTER
@@ -179,32 +182,35 @@ export default function HeroSection() {
           className="flex-1 flex justify-center relative"
         >
           <div className="relative">
-            <div
-              className="absolute -inset-8 rounded-3xl opacity-60"
-              style={{
-                background: "radial-gradient(circle, rgba(255,215,0,0.15) 0%, transparent 70%)",
-              }}
-            />
             <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
-              className="relative"
-              style={{
-                transform: `translate(${mousePos.x * -8}px, ${mousePos.y * -8}px)`,
-              }}
-            >
-              <div className="relative rounded-2xl overflow-hidden shadow-2xl" style={{ boxShadow: "0 0 80px rgba(255,215,0,0.2), 0 25px 50px rgba(0,0,0,0.5)" }}>
-                <Image
-                  src="/chupa-hero.jpg"
-                  alt="CHUPA"
-                  width={520}
-                  height={520}
-                  priority
-                  className="w-[300px] sm:w-[400px] lg:w-[520px] h-auto"
-                />
-                <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: "inset 0 0 60px rgba(0,0,0,0.3)" }} />
-              </div>
-            </motion.div>
+              className="absolute -inset-16 rounded-full"
+              animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.5, 0.3] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              style={{ background: "radial-gradient(circle, rgba(255,215,0,0.1) 0%, transparent 70%)" }}
+            />
+            <div ref={imageRef} style={{ willChange: "transform" }}>
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                className="relative"
+              >
+                <div
+                  className="relative rounded-2xl overflow-hidden"
+                  style={{ boxShadow: "0 0 80px rgba(255,215,0,0.15), 0 25px 50px rgba(0,0,0,0.5)" }}
+                >
+                  <Image
+                    src="/chupa-hero.jpg"
+                    alt="CHUPA"
+                    width={520}
+                    height={520}
+                    priority
+                    className="w-[280px] sm:w-[380px] lg:w-[480px] h-auto"
+                  />
+                  <div className="absolute inset-0 rounded-2xl" style={{ boxShadow: "inset 0 0 60px rgba(0,0,0,0.3)" }} />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                </div>
+              </motion.div>
+            </div>
             <motion.div
               className="absolute -top-6 -right-6"
               animate={{ rotate: [0, 10, -10, 0], y: [0, -8, 0] }}
@@ -224,7 +230,7 @@ export default function HeroSection() {
               animate={{ scale: [1, 1.2, 1], rotate: [0, 15, 0] }}
               transition={{ duration: 3, repeat: Infinity, delay: 1 }}
             >
-              <StarSvg className="w-8 h-8 drop-shadow-lg opacity-60" />
+              <StarSvg className="w-8 h-8 drop-shadow-lg opacity-50" />
             </motion.div>
           </div>
         </motion.div>
@@ -234,7 +240,7 @@ export default function HeroSection() {
         transition={{ duration: 2, repeat: Infinity }}
         className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
       >
-        <div className="w-6 h-10 rounded-full border-2 border-white/20 flex justify-center pt-2">
+        <div className="w-6 h-10 rounded-full border-2 border-white/15 flex justify-center pt-2">
           <motion.div
             animate={{ y: [0, 12, 0], opacity: [1, 0, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
