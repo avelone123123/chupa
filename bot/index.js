@@ -3,7 +3,7 @@ import fetch from "node-fetch";
 import { config } from "./config.js";
 import { fetchTrendingMemeImage, postToTwitter } from "./twitter.js";
 import { analyzeAndTransformMeme } from "./ai.js";
-import { sendApprovalPreview, postToTelegramChannel, answerCallbackQuery, editMessageCaption } from "./telegram.js";
+import { sendStartupNotification, sendApprovalPreview, postToTelegramChannel, answerCallbackQuery, editMessageCaption } from "./telegram.js";
 const pendingPosts = new Map();
 let lastUpdateId = 0;
 export async function createPostForApproval() {
@@ -59,15 +59,18 @@ async function pollTelegramUpdates() {
   }
 }
 if (process.argv.includes("--once")) {
+  sendStartupNotification(config.intervalMinutes).catch(console.error);
   createPostForApproval().then(() => {
     console.log("Preview sent! Starting polling for approval (ctrl+c to stop)...");
     setInterval(pollTelegramUpdates, 2000);
   }).catch((err) => console.error("Error:", err));
 } else {
   console.log(`Starting CHUPA Interactive Approval Bot (every ${config.intervalMinutes} minutes)...`);
+  sendStartupNotification(config.intervalMinutes).catch(console.error);
   createPostForApproval().catch(console.error);
   setInterval(pollTelegramUpdates, 2000);
   cron.schedule(`*/${config.intervalMinutes} * * * *`, () => {
     createPostForApproval().catch(console.error);
   });
 }
+process.on("unhandledRejection", (err) => console.error("Unhandled error:", err?.message || err));
