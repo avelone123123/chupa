@@ -64,10 +64,10 @@ if (process.argv.includes("--once")) {
     setInterval(pollTelegramUpdates, 2000);
   }).catch((err) => console.error("Error:", err));
 } else {
-  console.log(`Starting CHUPA Interactive Approval Bot (every ${config.intervalHours} hours)...`);
+  console.log(`Starting CHUPA Interactive Approval Bot (every ${config.intervalMinutes} minutes)...`);
   createPostForApproval().catch(console.error);
   setInterval(pollTelegramUpdates, 2000);
-  cron.schedule(`0 */${config.intervalHours} * * *`, () => {
+  cron.schedule(`*/${config.intervalMinutes} * * * *`, () => {
     createPostForApproval().catch(console.error);
   });
 }

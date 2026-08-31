@@ -8,6 +8,6 @@ export const config = {
   twitterAccessSecret: process.env.TWITTER_ACCESS_SECRET || "",
   telegramBotToken: process.env.TELEGRAM_BOT_TOKEN || "",
   telegramChatId: process.env.TELEGRAM_CHAT_ID || "",
-  intervalHours: parseInt(process.env.INTERVAL_HOURS || "3", 10),
+  intervalMinutes: parseInt(process.env.INTERVAL_MINUTES || "30", 10),
   searchKeywords: ["#memecoin", "#solanamemecoin", "$SOL meme", "crypto meme", "pumpfun"],
 };
