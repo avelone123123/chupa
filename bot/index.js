@@ -3,10 +3,11 @@ import fetch from "node-fetch";
 import { config } from "./config.js";
 import { fetchTrendingMemeImage, postToTwitter } from "./twitter.js";
 import { analyzeAndTransformMeme } from "./ai.js";
-import { sendStartupNotification, sendApprovalPreview, answerCallbackQuery, editMessageCaption } from "./telegram.js";
+import { sendStartupNotification, sendApprovalPreview, getTelegramFileUrl, answerCallbackQuery, editMessageCaption, sendSimpleMessage } from "./telegram.js";
 const pendingPosts = new Map();
 let lastUpdateId = 0;
 let userChatId = null;
+let awaitingPhotoPostId = null;
 export async function createPostForApproval() {
   if (!userChatId) return;
   console.log("Generating CHUPA meme post for user approval...");
@@ -28,11 +29,27 @@ async function pollTelegramUpdates() {
         lastUpdateId = update.update_id;
         if (update.message && update.message.chat) {
           const incomingChatId = update.message.chat.id;
-          const isFirstTime = !userChatId;
           userChatId = incomingChatId;
-          console.log("Connected to Telegram user chat:", userChatId);
-          await sendStartupNotification(userChatId, config.intervalMinutes);
-          createPostForApproval().catch(console.error);
+          if (update.message.photo && update.message.photo.length > 0 && awaitingPhotoPostId) {
+            const photoArray = update.message.photo;
+            const largestPhoto = photoArray[photoArray.length - 1];
+            const photoUrl = await getTelegramFileUrl(largestPhoto.file_id);
+            if (photoUrl) {
+              const post = pendingPosts.get(awaitingPhotoPostId);
+              if (post) {
+                post.generatedImageUrl = photoUrl;
+                await sendSimpleMessage(userChatId, "✅ <b>Твоя картинка принята! Заменяем...</b>");
+                await sendApprovalPreview(userChatId, photoUrl, post.captionText, awaitingPhotoPostId);
+                awaitingPhotoPostId = null;
+              }
+            }
+          } else if (update.message.text) {
+            if (update.message.text.includes("/start")) {
+              console.log("Connected to Telegram user chat:", userChatId);
+              await sendStartupNotification(userChatId, config.intervalMinutes);
+              createPostForApproval().catch(console.error);
+            }
+          }
         }
         if (update.callback_query) {
           const query = update.callback_query;
@@ -45,7 +62,7 @@ async function pollTelegramUpdates() {
             if (post) {
               await answerCallbackQuery(query.id, "Публикуем твит!");
               await postToTwitter(post.generatedImageUrl, post.captionText);
-              await editMessageCaption(chatId, messageId, `✅ <b>ТВИТ ОПУБЛИКОВАН В X (TWITTER)!</b>\n\n${post.captionText}`);
+              await editMessageCaption(chatId, messageId, `✅ <b>ТВИТ ОПУБЛИКОВАНО В X (TWITTER)!</b>\n\n${post.captionText}`);
               pendingPosts.delete(id);
             }
           } else if (dataStr.startsWith("skip_")) {
@@ -59,6 +76,11 @@ async function pollTelegramUpdates() {
             await editMessageCaption(chatId, messageId, `🔄 <b>ГЕНЕРИРУЕТСЯ ДРУГОЙ ВАРИАНТ...</b>`);
             pendingPosts.delete(id);
             createPostForApproval().catch(console.error);
+          } else if (dataStr.startsWith("custom_")) {
+            const id = dataStr.replace("custom_", "");
+            awaitingPhotoPostId = id;
+            await answerCallbackQuery(query.id, "Отправь свое фото!");
+            await sendSimpleMessage(chatId, "📸 <b>Отправь свою картинку прямо в этот чат, и я прикреплю её к твиту!</b>");
           }
         }
       }

@@ -28,7 +28,7 @@ export async function sendStartupNotification(targetChatId, minutes) {
 }
 export async function sendApprovalPreview(targetChatId, imageUrl, xCaption, postId) {
   if (!config.telegramBotToken || !targetChatId) return null;
-  const text = `🎯 <b>НОВЫЙ ТВИТ ДЛЯ CHUPA</b>\n\n${xCaption}`;
+  const text = `🎯 <b>НОВЫЙ ТВИТ ДЛЯ CHUPA (СКОРО ЗАПУСК)</b>\n\n${xCaption}`;
   const url = `https://api.telegram.org/bot${config.telegramBotToken}/sendPhoto`;
   try {
     const response = await fetchWithRetry(url, {
@@ -46,7 +46,8 @@ export async function sendApprovalPreview(targetChatId, imageUrl, xCaption, post
               { text: "❌ Пропустить", callback_data: `skip_${postId}` }
             ],
             [
-              { text: "🔄 Другой вариант", callback_data: `regen_${postId}` }
+              { text: "🔄 Другой текст/мем", callback_data: `regen_${postId}` },
+              { text: "🖼 Своя картинка", callback_data: `custom_${postId}` }
             ]
           ]
         }
@@ -56,6 +57,15 @@ export async function sendApprovalPreview(targetChatId, imageUrl, xCaption, post
   } catch (err) {
     console.error("Preview send error:", err.message);
   }
+}
+export async function getTelegramFileUrl(fileId) {
+  const url = `https://api.telegram.org/bot${config.telegramBotToken}/getFile?file_id=${fileId}`;
+  const res = await fetchWithRetry(url);
+  const data = await res.json();
+  if (data.ok && data.result?.file_path) {
+    return `https://api.telegram.org/file/bot${config.telegramBotToken}/${data.result.file_path}`;
+  }
+  return null;
 }
 export async function answerCallbackQuery(callbackQueryId, text) {
   const url = `https://api.telegram.org/bot${config.telegramBotToken}/answerCallbackQuery`;
@@ -73,7 +83,17 @@ export async function editMessageCaption(chatId, messageId, caption) {
     await fetchWithRetry(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: chatId, message_id: messageId, caption: caption, parse_mode: "HTML", reply_markup: { inline_keyboard: [] } }),
+      body: JSON.stringify({ chatId: chatId, message_id: messageId, caption: caption, parse_mode: "HTML", reply_markup: { inline_keyboard: [] } }),
+    });
+  } catch (err) {}
+}
+export async function sendSimpleMessage(chatId, text) {
+  const url = `https://api.telegram.org/bot${config.telegramBotToken}/sendMessage`;
+  try {
+    await fetchWithRetry(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: chatId, text: text, parse_mode: "HTML" }),
     });
   } catch (err) {}
 }
