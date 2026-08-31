@@ -11,23 +11,23 @@ async function fetchWithRetry(url, options, retries = 3) {
     }
   }
 }
-export async function sendStartupNotification(minutes) {
-  if (!config.telegramBotToken || !config.telegramChatId) return null;
+export async function sendStartupNotification(targetChatId, minutes) {
+  if (!config.telegramBotToken || !targetChatId) return null;
   const text = `🤖 <b>CHUPA Bot запущен и работает!</b>\n\nДо генерации следующего поста осталось: <b>${minutes} минут</b> ⏳`;
   const url = `https://api.telegram.org/bot${config.telegramBotToken}/sendMessage`;
   try {
     const res = await fetchWithRetry(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chat_id: config.telegramChatId, text: text, parse_mode: "HTML" }),
+      body: JSON.stringify({ chat_id: targetChatId, text: text, parse_mode: "HTML" }),
     });
     return res.json();
   } catch (err) {
     console.error("Startup notification failed:", err.message);
   }
 }
-export async function sendApprovalPreview(imageUrl, xCaption, tgCaption, postId) {
-  if (!config.telegramBotToken || !config.telegramChatId) return null;
+export async function sendApprovalPreview(targetChatId, imageUrl, xCaption, tgCaption, postId) {
+  if (!config.telegramBotToken || !targetChatId) return null;
   const text = `🎯 <b>НОВЫЙ ПОСТ ДЛЯ CHUPA</b>\n\n<b>X (Twitter):</b>\n${xCaption}\n\n<b>Telegram:</b>\n${tgCaption}`;
   const url = `https://api.telegram.org/bot${config.telegramBotToken}/sendPhoto`;
   try {
@@ -35,7 +35,7 @@ export async function sendApprovalPreview(imageUrl, xCaption, tgCaption, postId)
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        chat_id: config.telegramChatId,
+        chat_id: targetChatId,
         photo: imageUrl,
         caption: text,
         parse_mode: "HTML",

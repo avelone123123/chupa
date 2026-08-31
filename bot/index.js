@@ -6,14 +6,17 @@ import { analyzeAndTransformMeme } from "./ai.js";
 import { sendStartupNotification, sendApprovalPreview, postToTelegramChannel, answerCallbackQuery, editMessageCaption } from "./telegram.js";
 const pendingPosts = new Map();
 let lastUpdateId = 0;
+let adminChatId = null;
 export async function createPostForApproval() {
+  const targetChatId = adminChatId || config.telegramChatId;
+  if (!targetChatId) return;
   console.log("Generating CHUPA meme post for user approval...");
   const trendingImageUrl = await fetchTrendingMemeImage();
   const { generatedImageUrl, captionText, telegramText } = await analyzeAndTransformMeme(trendingImageUrl);
   const postId = Date.now().toString();
   pendingPosts.set(postId, { generatedImageUrl, captionText, telegramText });
-  console.log("Sending approval preview to Telegram...");
-  await sendApprovalPreview(generatedImageUrl, captionText, telegramText, postId);
+  console.log("Sending approval preview to Telegram chat:", targetChatId);
+  await sendApprovalPreview(targetChatId, generatedImageUrl, captionText, telegramText, postId);
 }
 async function pollTelegramUpdates() {
   if (!config.telegramBotToken) return;
@@ -24,6 +27,15 @@ async function pollTelegramUpdates() {
     if (data.ok && data.result) {
       for (const update of data.result) {
         lastUpdateId = update.update_id;
+        if (update.message && update.message.chat) {
+          const incomingChatId = update.message.chat.id;
+          if (!adminChatId || adminChatId !== incomingChatId) {
+            adminChatId = incomingChatId;
+            console.log("Admin chat registered:", adminChatId);
+            await sendStartupNotification(adminChatId, config.intervalMinutes);
+            createPostForApproval().catch(console.error);
+          }
+        }
         if (update.callback_query) {
           const query = update.callback_query;
           const dataStr = query.data;
@@ -58,19 +70,10 @@ async function pollTelegramUpdates() {
     console.error("Polling error:", err.message);
   }
 }
-if (process.argv.includes("--once")) {
-  sendStartupNotification(config.intervalMinutes).catch(console.error);
-  createPostForApproval().then(() => {
-    console.log("Preview sent! Starting polling for approval (ctrl+c to stop)...");
-    setInterval(pollTelegramUpdates, 2000);
-  }).catch((err) => console.error("Error:", err));
-} else {
-  console.log(`Starting CHUPA Interactive Approval Bot (every ${config.intervalMinutes} minutes)...`);
-  sendStartupNotification(config.intervalMinutes).catch(console.error);
+console.log(`Starting CHUPA Interactive Approval Bot (every ${config.intervalMinutes} minutes)...`);
+console.log("Waiting for /start in Telegram bot...");
+setInterval(pollTelegramUpdates, 2000);
+cron.schedule(`*/${config.intervalMinutes} * * * *`, () => {
   createPostForApproval().catch(console.error);
-  setInterval(pollTelegramUpdates, 2000);
-  cron.schedule(`*/${config.intervalMinutes} * * * *`, () => {
-    createPostForApproval().catch(console.error);
-  });
-}
+});
 process.on("unhandledRejection", (err) => console.error("Unhandled error:", err?.message || err));
