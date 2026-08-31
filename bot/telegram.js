@@ -13,7 +13,7 @@ async function fetchWithRetry(url, options, retries = 3) {
 }
 export async function sendStartupNotification(targetChatId, minutes) {
   if (!config.telegramBotToken || !targetChatId) return null;
-  const text = `🤖 <b>CHUPA Bot запущен и работает!</b>\n\nДо генерации следующего поста осталось: <b>${minutes} минут</b> ⏳`;
+  const text = `🤖 <b>CHUPA Bot запущен и работает!</b>\n\nДо следующего нового поста осталось: <b>${minutes} минут</b> ⏳`;
   const url = `https://api.telegram.org/bot${config.telegramBotToken}/sendMessage`;
   try {
     const res = await fetchWithRetry(url, {
@@ -26,9 +26,9 @@ export async function sendStartupNotification(targetChatId, minutes) {
     console.error("Startup notification failed:", err.message);
   }
 }
-export async function sendApprovalPreview(targetChatId, imageUrl, xCaption, tgCaption, postId) {
+export async function sendApprovalPreview(targetChatId, imageUrl, xCaption, postId) {
   if (!config.telegramBotToken || !targetChatId) return null;
-  const text = `🎯 <b>НОВЫЙ ПОСТ ДЛЯ CHUPA</b>\n\n<b>X (Twitter):</b>\n${xCaption}\n\n<b>Telegram:</b>\n${tgCaption}`;
+  const text = `🎯 <b>НОВЫЙ ТВИТ ДЛЯ CHUPA</b>\n\n${xCaption}`;
   const url = `https://api.telegram.org/bot${config.telegramBotToken}/sendPhoto`;
   try {
     const response = await fetchWithRetry(url, {
@@ -42,7 +42,7 @@ export async function sendApprovalPreview(targetChatId, imageUrl, xCaption, tgCa
         reply_markup: {
           inline_keyboard: [
             [
-              { text: "🚀 Выложить", callback_data: `pub_${postId}` },
+              { text: "🚀 Выложить твит", callback_data: `pub_${postId}` },
               { text: "❌ Пропустить", callback_data: `skip_${postId}` }
             ],
             [
@@ -55,24 +55,6 @@ export async function sendApprovalPreview(targetChatId, imageUrl, xCaption, tgCa
     return response.json();
   } catch (err) {
     console.error("Preview send error:", err.message);
-  }
-}
-export async function postToTelegramChannel(imageUrl, caption) {
-  if (!config.telegramBotToken || !config.telegramChatId) return null;
-  const url = `https://api.telegram.org/bot${config.telegramBotToken}/sendPhoto`;
-  try {
-    const response = await fetchWithRetry(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: config.telegramChatId,
-        photo: imageUrl,
-        caption: caption,
-      }),
-    });
-    return response.json();
-  } catch (err) {
-    console.error("Channel post error:", err.message);
   }
 }
 export async function answerCallbackQuery(callbackQueryId, text) {

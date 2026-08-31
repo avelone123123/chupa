@@ -3,20 +3,19 @@ import fetch from "node-fetch";
 import { config } from "./config.js";
 import { fetchTrendingMemeImage, postToTwitter } from "./twitter.js";
 import { analyzeAndTransformMeme } from "./ai.js";
-import { sendStartupNotification, sendApprovalPreview, postToTelegramChannel, answerCallbackQuery, editMessageCaption } from "./telegram.js";
+import { sendStartupNotification, sendApprovalPreview, answerCallbackQuery, editMessageCaption } from "./telegram.js";
 const pendingPosts = new Map();
 let lastUpdateId = 0;
-let adminChatId = null;
+let userChatId = null;
 export async function createPostForApproval() {
-  const targetChatId = adminChatId || config.telegramChatId;
-  if (!targetChatId) return;
+  if (!userChatId) return;
   console.log("Generating CHUPA meme post for user approval...");
   const trendingImageUrl = await fetchTrendingMemeImage();
-  const { generatedImageUrl, captionText, telegramText } = await analyzeAndTransformMeme(trendingImageUrl);
+  const { generatedImageUrl, captionText } = await analyzeAndTransformMeme(trendingImageUrl);
   const postId = Date.now().toString();
-  pendingPosts.set(postId, { generatedImageUrl, captionText, telegramText });
-  console.log("Sending approval preview to Telegram chat:", targetChatId);
-  await sendApprovalPreview(targetChatId, generatedImageUrl, captionText, telegramText, postId);
+  pendingPosts.set(postId, { generatedImageUrl, captionText });
+  console.log("Sending approval preview to Telegram user chat:", userChatId);
+  await sendApprovalPreview(userChatId, generatedImageUrl, captionText, postId);
 }
 async function pollTelegramUpdates() {
   if (!config.telegramBotToken) return;
@@ -29,12 +28,11 @@ async function pollTelegramUpdates() {
         lastUpdateId = update.update_id;
         if (update.message && update.message.chat) {
           const incomingChatId = update.message.chat.id;
-          if (!adminChatId || adminChatId !== incomingChatId) {
-            adminChatId = incomingChatId;
-            console.log("Admin chat registered:", adminChatId);
-            await sendStartupNotification(adminChatId, config.intervalMinutes);
-            createPostForApproval().catch(console.error);
-          }
+          const isFirstTime = !userChatId;
+          userChatId = incomingChatId;
+          console.log("Connected to Telegram user chat:", userChatId);
+          await sendStartupNotification(userChatId, config.intervalMinutes);
+          createPostForApproval().catch(console.error);
         }
         if (update.callback_query) {
           const query = update.callback_query;
@@ -45,16 +43,15 @@ async function pollTelegramUpdates() {
             const id = dataStr.replace("pub_", "");
             const post = pendingPosts.get(id);
             if (post) {
-              await answerCallbackQuery(query.id, "Публикуем в X и Telegram!");
+              await answerCallbackQuery(query.id, "Публикуем твит!");
               await postToTwitter(post.generatedImageUrl, post.captionText);
-              await postToTelegramChannel(post.generatedImageUrl, post.telegramText);
-              await editMessageCaption(chatId, messageId, `✅ <b>ОПУБЛИКОВАНО В X И TELEGRAM!</b>\n\n${post.captionText}`);
+              await editMessageCaption(chatId, messageId, `✅ <b>ТВИТ ОПУБЛИКОВАН В X (TWITTER)!</b>\n\n${post.captionText}`);
               pendingPosts.delete(id);
             }
           } else if (dataStr.startsWith("skip_")) {
             const id = dataStr.replace("skip_", "");
             await answerCallbackQuery(query.id, "Отменено.");
-            await editMessageCaption(chatId, messageId, `❌ <b>ПУБЛИКАЦИЯ ОТМЕНЕНА</b>`);
+            await editMessageCaption(chatId, messageId, `❌ <b>ТВИТ ОТМЕНЕН</b>`);
             pendingPosts.delete(id);
           } else if (dataStr.startsWith("regen_")) {
             const id = dataStr.replace("regen_", "");
@@ -70,8 +67,8 @@ async function pollTelegramUpdates() {
     console.error("Polling error:", err.message);
   }
 }
-console.log(`Starting CHUPA Interactive Approval Bot (every ${config.intervalMinutes} minutes)...`);
-console.log("Waiting for /start in Telegram bot...");
+console.log(`Starting CHUPA Bot in Telegram Chat mode (every ${config.intervalMinutes} minutes)...`);
+console.log("Send /start in Telegram bot chat to activate!");
 setInterval(pollTelegramUpdates, 2000);
 cron.schedule(`*/${config.intervalMinutes} * * * *`, () => {
   createPostForApproval().catch(console.error);
