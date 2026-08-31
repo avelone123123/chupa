@@ -1,25 +1,58 @@
-const posts = [
+const faces = Array.from({ length: 12 }, (_, i) => `https://raw.githubusercontent.com/avelone123123/chupa/main/public/faces/face${i + 1}.png`);
+const xPosts = [
   {
-    prompt: "epic viral crypto meme poster for $CHUPA, a monkey wearing a black cap with yellow CHUPA text pointing finger at glowing yellow full moon, glowing golden green chart line going up to the moon, text overlay '$CHUPA NO FEAR NO FOMO JUST CHUPA' and 'TO THE MOON', cosmic dark background with golden sparkles",
-    text: "🦣📈 CHUPA sees only one destination.\n\nThe chart can shake.\nThe weak hands can leave.\nCHUPA keeps pointing at the moon. 🟡🚀\n\n$CHUPA\nNO FEAR. NO FOMO. JUST CHUPA.\n\n#CHUPA #Memecoin #Solana #Crypto #CryptoMoon #ToTheMoon #PumpFun #MemeCoin #SOL 🚀🟡"
+    text: "CHUPA checked the chart.\n\nThe chart checked CHUPA.\n\nNobody knows what happens next. 🐒📈",
+    tags: "\n\n#CHUPA #Crypto"
   },
   {
-    prompt: "epic viral crypto meme poster for $CHUPA token, charismatic guy in white cap labeled CHUPA with golden chain holding giant $CHUPA coin, giant green candle beam shooting into space, text overlay '$CHUPA CHUPA BEAM DETECTED MOON IS INEVITABLE', golden coins around",
-    text: "🦣📡 CHUPA BEAM LOCATED 🟢📡\n\nWhen the signal hits the sky, you don't ask questions. You load the bags. 💰⚡\n\nNo VC dumps. Just pure CHUPA power taking over space.\n\n$CHUPA #Chupakoi #CHUPA #CryptoTwitter #Altcoins #100xGem #Solana #PumpFun 🚀🟡"
+    text: "GM to everyone except the guy who sold before the pump.\n\nYou know who you are. 🐒\n\n$CHUPA",
+    tags: "\n\n#CHUPA #Memecoin #Solana"
   },
   {
-    prompt: "viral memecoin poster for $CHUPA token, monkey wearing black CHUPA hat looking at smartphone with glowing green candles chart, text overlay '$CHUPA SLEEP IS TEMPORARY CHUPA IS FOREVER', dark room with neon gold aura",
-    text: "🦣📱 CHUPA found the phone. Now he's watching the chart.\n\nSLEEP IS TEMPORARY.\nCHUPA IS FOREVER. 🟢🌙\n\nThe whole village is sleeping... while $CHUPA is climbing the chart!\n\n#CHUPACOIN #CHUPA #Memecoin #Crypto #Solana #PumpFun #ToTheMoon 🚀🟡"
+    text: "Market: red 🔴\n\nCHUPA: interesting. 🐒📱",
+    tags: "\n\n#CHUPA #Crypto"
   },
   {
-    prompt: "epic crypto meme poster for $CHUPA token, king sitting on golden throne surrounded by $CHUPA coins and green candles, text overlay '$CHUPA ALL HAIL KING CHUPA MOON IS SECURED', ultra detailed",
-    text: "🦣👑 ALL HAIL KING CHUPA: THE MOON IS SECURED 🚀\n\nMe checking my wallet every 5 seconds to see if $CHUPA hit the moon yet 🦣📱\n\nNo team. No roadmap. Just pure CHUPA energy.\n\nAre you CHUPAKOY? 🪙\n\n$CHUPA #Chupakoi #CHUPA #Memecoin #Crypto #Solana #PumpFun #ToTheMoon 🚀🟡"
+    text: "One question.\n\nAre you watching CHUPA…\nor is CHUPA watching you? 👀🐒",
+    tags: "\n\n#CHUPA #Solana #MemeCoin"
+  },
+  {
+    text: "No roadmap.\n\nNo promises.\n\nJust a monkey with a phone and questionable financial decisions. 🐒📱",
+    tags: "\n\n#CHUPA #PumpFun"
+  },
+  {
+    text: "CHUPA found the phone. Now he's watching the chart.\n\nIs CHUPA sleeping or cooking? 🍳🐒",
+    tags: "\n\n#CHUPA #Memecoin"
+  },
+  {
+    text: "Who is still here watching the green candles with CHUPA? 🟢🪙\n\nDrop your location below. 👇",
+    tags: "\n\n#CHUPA #Solana"
   }
 ];
+const tgPosts = [
+  "CHUPA checked the chart.\n\nThe chart checked CHUPA.\n\nNo fake roadmap, no guaranteed 100x promises. Just pure community chaos and a monkey watching the candles. 📈🐒\n\nAre you holding or watching from the sidelines?",
+  "GM CHUPAKOY ☀️\n\nTo everyone waking up to check the wallet every 5 seconds — you are not alone.\n\nCHUPA is watching the chart right now. What's your play today? 🐒📱",
+  "Red day in crypto?\n\nCHUPA finds it interesting. When others panic, CHUPA just sits back and drinks tea. ☕️🔴\n\nWho is still here holding strong with the CHUPA army?",
+  "Quick question for the community:\n\nIs CHUPA sleeping... or is CHUPA cooking something big behind the scenes? 🍳🐒\n\nLeave your thoughts in the chat!",
+  "No corporate marketing. No fake promises. Just pure meme energy and questionable financial decisions. 🪙\n\nThat is the CHUPA way."
+];
+const fluxPrompts = [
+  "meme poster of CHUPA, charismatic bearded guy in white cap labeled CHUPA holding $CHUPA coin, neon gold green chart candles, high quality meme art",
+  "funny meme of a monkey wearing a black cap with yellow CHUPA text looking at glowing smartphone screen with green chart candles, dark room gold aura",
+  "epic poster of CHUPA sitting on a throne surrounded by golden coins and $CHUPA crypto ticker, cinematic lighting"
+];
 export async function analyzeAndTransformMeme() {
-  const item = posts[Math.floor(Math.random() * posts.length)];
-  const seed = Math.floor(Math.random() * 999999);
-  const promptEncoded = encodeURIComponent(item.prompt);
-  const generatedImageUrl = `https://image.pollinations.ai/prompt/${promptEncoded}?width=1024&height=1024&seed=${seed}&nologo=true&model=flux`;
-  return { generatedImageUrl, captionText: item.text };
+  const useRealFace = Math.random() > 0.5;
+  let generatedImageUrl = "";
+  if (useRealFace) {
+    generatedImageUrl = faces[Math.floor(Math.random() * faces.length)];
+  } else {
+    const prompt = fluxPrompts[Math.floor(Math.random() * fluxPrompts.length)];
+    const seed = Math.floor(Math.random() * 999999);
+    generatedImageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&seed=${seed}&nologo=true&model=flux`;
+  }
+  const xItem = xPosts[Math.floor(Math.random() * xPosts.length)];
+  const xText = `${xItem.text}${xItem.tags}`;
+  const tgText = tgPosts[Math.floor(Math.random() * tgPosts.length)];
+  return { generatedImageUrl, captionText: xText, telegramText: tgText };
 }

@@ -5,15 +5,15 @@ import { analyzeAndTransformMeme } from "./ai.js";
 import { postToTwitter } from "./twitter.js";
 import { postToTelegram } from "./telegram.js";
 export async function runMemeAutomationCycle() {
-  console.log("Starting CHUPA autonomous meme cycle...");
+  console.log("Starting CHUPA autonomous AI manager cycle...");
   const trendingImageUrl = await fetchTrendingMemeImage();
-  console.log("Found meme image:", trendingImageUrl);
-  const { generatedImageUrl, captionText } = await analyzeAndTransformMeme(trendingImageUrl);
-  console.log("Generated CHUPA Meme URL:", generatedImageUrl);
-  console.log("Generated Caption:\n", captionText);
+  const { generatedImageUrl, captionText, telegramText } = await analyzeAndTransformMeme(trendingImageUrl);
+  console.log("CHUPA Image URL:", generatedImageUrl);
+  console.log("X Caption:\n", captionText);
+  console.log("Telegram Caption:\n", telegramText);
   await postToTwitter(generatedImageUrl, captionText);
-  await postToTelegram(generatedImageUrl, captionText);
-  console.log("CHUPA autonomous cycle complete!");
+  await postToTelegram(generatedImageUrl, telegramText || captionText);
+  console.log("CHUPA cycle complete!");
 }
 if (process.argv.includes("--once")) {
   runMemeAutomationCycle().catch((err) => console.error("Cycle error:", err));
